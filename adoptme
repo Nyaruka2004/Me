@@ -1,0 +1,123 @@
+```lua
+--// Nyaruka - Adopt Me Auto Farm & Hatch
+
+local Window = Window or {};
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/NyarukaDev/UI-Lib/main/NyarukaUI.lua"))() -- Replace with your UI Library URL if needed
+local GUI = Library.Window({Name = "Nyaruka - Adopt Me", IntroText = "Auto Farm & Hatch", Color = Color3.fromRGB(70, 70, 70)})
+local autoFarmEnabled = false
+local autoHatchEnabled = false
+local selectedEgg = nil
+
+--// Utility Functions
+
+local function notify(text)
+    Library.Notification(text);
+end
+
+local function getNearestObject(objectName)
+    local nearestObject = nil
+    local shortestDistance = math.huge
+
+    for i, v in pairs(workspace:GetDescendants()) do
+        if v.Name == objectName and v:IsA("BasePart") then
+            local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                nearestObject = v
+            end
+        end
+    end
+
+    return nearestObject
+end
+
+local function equipPet(petName)
+    -- Add your pet equipping logic here. This will depend on Adopt Me's specific implementation.
+    -- Example (might not work directly, needs adaptation):
+    for i, v in pairs(game.Players.LocalPlayer.Character:GetChildren()) do
+        if v:IsA("Accessory") and string.find(v.Name, petName) then
+            -- Assuming equipping involves clicking a button or some similar action.
+            -- You'll need to find the relevant remote event and fire it.
+            notify("Attempting to equip: " .. petName)
+            -- Example: game:GetService("ReplicatedStorage").Events.EquipPet:FireServer(v)
+            -- Replace with the ACTUAL equip event and arguments.
+            return true
+        end
+    end
+    notify("Pet not found: " .. petName)
+    return false
+end
+
+local function hatchEgg(eggName)
+	-- Add your egg hatching logic here. This will depend on Adopt Me's specific implementation.
+	-- Example (needs adaptation):
+	for i, v in pairs(workspace:GetDescendants()) do
+		if v:IsA("Model") and v.Name == eggName then
+			--Assuming the egg has a ClickDetector
+			local clickDetector = v:FindFirstChild("ClickDetector")
+			if clickDetector then
+				fireclickdetector(clickDetector)
+				notify("Hatching: " .. eggName)
+				return true
+			end
+		end
+	end
+	notify("Egg not found: " .. eggName)
+	return false
+end
+
+--// Auto Farm Logic
+
+local function autoFarm()
+    while autoFarmEnabled do
+        local nearestNeeds = getNearestObject("Needs"); --Or whatever the farm object is named
+		if nearestNeeds then
+            game.Players.LocalPlayer.Character.Humanoid:MoveTo(nearestNeeds.Position)
+            wait(0.5)
+        end
+		wait(0.1)
+    end
+end
+
+--// Auto Hatch Logic
+
+local function autoHatch()
+    while autoHatchEnabled do
+		if selectedEgg then
+			hatchEgg(selectedEgg);
+		end
+        wait(5) -- Wait before trying to hatch again
+    end
+end
+
+--// GUI Elements
+
+local farmSection = GUI:Section({Name = "Farming"})
+
+farmSection:Toggle({Name = "Auto Farm", Default = false, Callback = function(state)
+    autoFarmEnabled = state
+    if state then
+        notify("Auto Farm Enabled")
+        coroutine.wrap(autoFarm)()
+    else
+        notify("Auto Farm Disabled")
+    end
+end})
+
+local hatchSection = GUI:Section({Name = "Hatching"})
+
+hatchSection:Dropdown({Name = "Select Egg", Options = {"Cracked Egg", "Pet Egg", "Royal Egg"}, Callback = function(option)
+    selectedEgg = option
+    notify("Selected Egg: " .. option)
+end})
+
+hatchSection:Toggle({Name = "Auto Hatch", Default = false, Callback = function(state)
+    autoHatchEnabled = state
+    if state then
+        notify("Auto Hatch Enabled")
+        coroutine.wrap(autoHatch)()
+    else
+        notify("Auto Hatch Disabled")
+    end
+end})
